@@ -160,13 +160,23 @@ void ApiV1::users_login_POST(Context *c)
 			{
 				qDebug() << "Fuck.";
 			}
-			
 			query2.bindValue(":valA",obj.value(QStringLiteral("Username")));
 			query2.bindValue(":valB",token);
 			query2.bindValue(":valC",expiryDate);
 			query2.bindValue(":valD",secret);
 			query2.exec();
-			qDebug() << query.lastError().text();
+			//qDebug() << query.lastError().text();
+			switch(query2.lastError().type())
+			{
+				case QSqlError::NoError : qDebug() << "no error";
+							  break;
+				case QSqlError::StatementError : qDebug() << "Statement error " << query2.lastError().text();
+								 break;
+				case QSqlError::TransactionError : qDebug() << "Transaction error" << query2.lastError().text();
+								   break;
+				case QSqlError::UnknownError : qDebug() << "Unknown Error!";
+								break;
+			}
 			//redone to support jwt standard.
 			QJsonObject header  {
 							{QStringLiteral("typ"),QStringLiteral("JWT")},
