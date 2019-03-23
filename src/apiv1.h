@@ -12,6 +12,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDate>
+#include "passwords.h" //this file is included in my .gitignore so as not to expose passwords to databases etc.
 using namespace Cutelyst;
 
 class ApiV1 : public Controller
