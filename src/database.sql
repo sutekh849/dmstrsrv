@@ -1,6 +1,7 @@
 #reference for the database schema
 
-CREATE DATABASE Music;
+#CREATE DATABASE Music;
+USE Music;
 CREATE TABLE Artists 
 (
 	ArtistID int NOT NULL UNIQUE,
@@ -43,7 +44,7 @@ CREATE TABLE Users
 CREATE TABLE IssuedTokens
 (
 	UserId VARCHAR(36),
-	Token VARCHAR(512),
+	Token VARCHAR(36),
 	ExpiryDate date,
 	ExpiryTime time,
 	FOREIGN KEY (UserID) REFERENCES Users(UserID),
