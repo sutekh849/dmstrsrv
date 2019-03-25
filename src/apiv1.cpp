@@ -7,7 +7,7 @@ ApiV1::ApiV1(QObject *parent) : Controller(parent)
 	db = QSqlDatabase::addDatabase("QMYSQL");
 	db.setHostName("localhost");
 	db.setDatabaseName("Music");
-	if( !db.open("dbuser",passwords::dbpassword) )
+	if( !db.open("dbuser",Passwords::dbPassword().data() ) )
 	{
 		qDebug() << "Database connection failed";
 //		qDebug() << QSqlDatabase::drivers();

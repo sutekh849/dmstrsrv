@@ -1,2 +1,2 @@
 build/
-src/passwords.h
+src/passwords.cpp
