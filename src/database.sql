@@ -47,6 +47,11 @@ CREATE TABLE IssuedTokens
 	Token VARCHAR(36),
 	ExpiryDate date,
 	ExpiryTime time,
+	secret VARCHAR(36),
 	FOREIGN KEY (UserID) REFERENCES Users(UserID),
 	PRIMARY KEY (Token)
 );
+
+CREATE OR REPLACE EVENT RemoveExpiredTokens
+ON SCHEDULE EVERY 1 HOUR
+DO DELETE FROM IssuedTokens WHERE ExpiryDate > NOW();
