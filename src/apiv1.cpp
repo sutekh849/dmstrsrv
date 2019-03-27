@@ -151,16 +151,15 @@ void ApiV1::users_login_POST(Context *c)
 		query.exec();
 		if(query.size() > 0)
 		{//login successful - insert the token into the database and then reply it to the user. 
-			QString token = QUuid::createUuid().toString();
-			QString secret = QUuid::createUuid().toString();
+			query.next();
+			QString token = QUuid::createUuid().toString().remove(QLatin1Char('{')).remove(QLatin1Char('}'));
+			QString secret = QUuid::createUuid().toString().remove(QLatin1Char('{')).remove(QLatin1Char('}'));
 			QSqlQuery query2;
 			QDate expiryDate = QDate::currentDate().addDays(1);
-			t = "INSERT INTO IssuedTokens (UserId, Token, ExpiryDate, secret) VALUES (:valA, :valB, :valC, :valD);";
-			if (!query2.prepare(t))
-			{
-				qDebug() << "Fuck.";
-			}
-			query2.bindValue(":valA",obj.value(QStringLiteral("Username")));
+			t = "INSERT INTO IssuedTokens (UserId, Token, expiryDate, secret) VALUES (:valA, :valB, :valC, :valD);";
+			query2.prepare(t);
+			qDebug() << query.value("UserId").toString();
+			query2.bindValue(":valA",query.value("UserID").toString());
 			query2.bindValue(":valB",token);
 			query2.bindValue(":valC",expiryDate);
 			query2.bindValue(":valD",secret);
@@ -170,12 +169,12 @@ void ApiV1::users_login_POST(Context *c)
 			{
 				case QSqlError::NoError : qDebug() << "no error";
 							  break;
-				case QSqlError::StatementError : qDebug() << "Statement error " << query2.lastError().text();
+				case QSqlError::StatementError : qDebug() << "Statement error: " << query2.lastError().text();
 								 break;
-				case QSqlError::TransactionError : qDebug() << "Transaction error" << query2.lastError().text();
+				case QSqlError::TransactionError : qDebug() << "Transaction error:" << query2.lastError().text();
 								   break;
 				case QSqlError::UnknownError : qDebug() << "Unknown Error!";
-								break;
+							       break;
 			}
 			//redone to support jwt standard.
 			QJsonObject header  {

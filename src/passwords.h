@@ -4,6 +4,9 @@
 class Passwords
 {
 public:
-	static constexpr std::experimental::string_view dbPassword();
+	static constexpr std::experimental::string_view dbPassword()
+	{
+		return "Assimil8";
+	}
 };
 #endif

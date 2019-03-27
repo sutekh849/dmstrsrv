@@ -4,7 +4,7 @@ set(dmstrsrv_SRCS
     ${dmstrsrv_SRCS}
     ${TEMPLATES_SRC}
 )
-
+#message(STATUS ${dmstrsrv_SRCS})
 # Create the application
 add_library(dmstrsrv SHARED ${dmstrsrv_SRCS})
 set (CMAKE_CXX_STANDARD 17)
