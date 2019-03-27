@@ -43,7 +43,7 @@ CREATE TABLE Users
 
 CREATE TABLE IssuedTokens
 (
-	UserId VARCHAR(36),
+	UserId VARCHAR(36) UNIQUE,
 	Token VARCHAR(36),
 	ExpiryDate date,
 	ExpiryTime time,

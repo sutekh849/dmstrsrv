@@ -13,4 +13,5 @@ curl -H "Content-Type: application/json" -X POST -d '{"Username": "someone_test_
 3 URLs are currently set up, api/v1/users for registration, api/v1/login for login, api/v1/artist_search for artist search.
 a fourth is WIP at present (api/v1/login_verify)
 
+-Login_verify should be done before a login prompt to confirm that the user isn't already logged in.
 happy hacking
