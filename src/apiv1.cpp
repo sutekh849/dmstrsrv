@@ -128,6 +128,12 @@ void ApiV1::users_login(Context *c)
 }
 void ApiV1::users_login_POST(Context *c)
 {
+	/*	TODO:
+		this works but is not as fast as it should be because of the additional query
+		which is ultimately unneccesary. I should refactor it at some point to be more efficient
+		and additionally remove allocations which doubtlessly take up time. I should however be sure
+		to clear strings stored at a class level which might otherwise be vulnerable.
+	*/
 	qDebug() << Q_FUNC_INFO;
 	const QJsonDocument doc = c->request()->bodyData().toJsonDocument();
 	const QJsonObject obj = doc.object();
@@ -158,16 +164,15 @@ void ApiV1::users_login_POST(Context *c)
 			QDate expiryDate = QDate::currentDate().addDays(1);
 			t = "INSERT INTO IssuedTokens (UserId, Token, expiryDate, secret) VALUES (:valA, :valB, :valC, :valD);";
 			query2.prepare(t);
-			qDebug() << query.value("UserId").toString();
+			//qDebug() << query.value("UserId").toString();
 			query2.bindValue(":valA",query.value("UserID").toString());
 			query2.bindValue(":valB",token);
 			query2.bindValue(":valC",expiryDate);
 			query2.bindValue(":valD",secret);
 			query2.exec();
-			//qDebug() << query.lastError().text();
 			switch(query2.lastError().type())
 			{
-				case QSqlError::NoError : qDebug() << "no error";
+				case QSqlError::NoError : //qDebug() << "no error";
 							  break;
 				case QSqlError::StatementError : qDebug() << "Statement error: " << query2.lastError().text();
 								 break;
