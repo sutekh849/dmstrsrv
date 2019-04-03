@@ -22,6 +22,7 @@ private:
     QSqlDatabase db;
     void authenticationError(Context *c, const QSqlError qse);
     void verificationFail(Context *c);
+	bool verifyUser(QString JWT);
     enum FailReason {PasswordWrong, UsernameWrong, ServerFailure};
 public:
     explicit ApiV1(QObject *parent = nullptr);
@@ -71,7 +72,12 @@ public:
 
     C_ATTR(login_verify_POST, :Private)
     void login_verify_POST(Context *c);
-
+	
+	C_ATTR(song_request, :Path('SongRequest') :AutoArgs :ActionClass(REST))
+	void song_request(Context *c);
+	
+	C_ATTR(song_request_POST, :Private)
+	void song_request_POST(Context *c);
 };
 
 #endif //APIV1_H

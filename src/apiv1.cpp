@@ -268,7 +268,7 @@ void ApiV1::login_verify(Context *c)
 }
 void ApiV1::login_verify_POST(Context *c)
 {
-        const QJsonDocument doc = c->request()->bodyData().toJsonDocument();
+	const QJsonDocument doc = c->request()->bodyData().toJsonDocument();
 	const QJsonObject obj = doc.object();
 	QString q = "SELECT * FROM IssuedTokens WHERE UserId = :valA AND Token = :valB";
 	QString jwt = obj.value(QStringLiteral("JWT")).toString();
@@ -344,9 +344,109 @@ void ApiV1::login_verify_POST(Context *c)
 		return;
 	}*/
 }
+bool verifyUser(QString JWT)
+{
+	//const QJsonDocument doc = c->request()->bodyData().toJsonDocument();
+	//const QJsonObject obj = doc.object();
+	QString q = "SELECT * FROM IssuedTokens WHERE UserId = :valA AND Token = :valB";
+	QString jwt = JWT;
+	//format: {"JWT":"(header).(payload).(signature)"}
+	QStringList jwtl = jwt.split('.');
+	if(jwtl.size() != 3)
+	{
+		verificationFail(c);
+		qDebug() << "invalid token";
+		return;
+	}
+	QByteArray hba;
+	hba.append(jwtl.at(0));
+	hba = QByteArray::fromBase64(hba,QByteArray::Base64UrlEncoding);
+//	QJsonDocument h = QJsonDocument::fromBinaryData(QByteArray::fromBase64(QByteArray::fromStdString(jwtl.at(0).toStdString()),QByteArray::Base64UrlEncoding));
+	QJsonDocument h = QJsonDocument::fromJson(hba);
+	hba.clear();
+	hba.append(jwtl.at(1));
+	hba = QByteArray::fromBase64(hba,QByteArray::Base64UrlEncoding);
+	QJsonDocument p = QJsonDocument::fromJson(hba);
+//	QJsonDocument p = QJsonDocument::fromBinaryData(QByteArray::fromBase64(QByteArray::fromStdString(jwtl.at(1).toStdString()),QByteArray::Base64UrlEncoding));
+	QJsonObject header = h.object();
+	QJsonObject payload = p.object();
+	//todo:test this.
+
+	qDebug() << header.value("typ");
+	qDebug() << payload.value("exp");
+	qDebug() << payload.value("jti").toString();
+	QSqlQuery query;
+	query.prepare(q);
+	query.bindValue(":valA",payload.value("UserID").toString());
+	query.bindValue(":valB",payload.value("jti").toString());
+	query.exec();
+	if(query.size() > 0)
+	{
+		query.next();
+		QString secret = query.value("secret").toString();
+		QCryptographicHash hasher(QCryptographicHash::Sha3_512);
+		hasher.addData(h.toJson().toBase64(QByteArray::Base64UrlEncoding));
+		hasher.addData(p.toJson().toBase64(QByteArray::Base64UrlEncoding));
+		hasher.addData(secret.toStdString().c_str(),secret.size());
+		if(hasher.result().toBase64(QByteArray::Base64UrlEncoding) == jwtl.at(2))
+		{//authentication successful
+			return true;
+		}
+		else
+		{
+			qDebug() << "hashes don't match. possible forged token";
+		}	
+	}
+	else
+	{
+		qDebug() << query.lastError().text();
+		qDebug() << "token refers to nonexistent userid:" << payload.value("UserID").toString() ;
+	}
+	qDebug() << "verification failed";
+	verificationFail(c);
+	return false;
+	//QSqlQuery query;
+	//query.prepare(q);
+	//query.bindValue(":valA",obj.value(QStringLiteral("JWT")));
+	//query.exec();
+	/*
+	if(query.size() > 0)
+	{
+		//token valid-allowed to proceed
+	}
+	else
+	{
+		verificationFail(c);
+		return;
+	}*/
+}
 void ApiV1::verificationFail(Context *c)
 {
 		c->response()->setJsonObjectBody({
 							{QStringLiteral("Response"),QStringLiteral("1")}
 						});
+		//c->setStatus(HttpStatus::Forbidden);
+}
+void song_request(Context *c)
+{
+	qDebug() << Q_FUNC_INFO;
+}
+void song_request_POST(Context *c)
+{
+	/*
+	{
+		"JWT": "<jwt token info>"
+		"SongID": "<songid>"
+	}
+	*/
+	const QJsonDocument doc = c->request()->bodyData().toJsonDocument();
+	const QJsonObject obj = doc.object();
+	QString jwt = obj.value(QStringLiteral("JWT")).toString();
+	if(verifyUser(jwt))
+	{
+		QString s = "SELECT * FROM Songs WHERE SongID = :valA";
+		c->response()->setContentType("audio/ogg");
+		return;
+	}
+	
 }
