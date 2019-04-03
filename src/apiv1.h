@@ -69,7 +69,7 @@ public:
     C_ATTR(login_verify, :Path('login_verify') :AutoArgs :ActionClass(REST))
     void login_verify(Context *c);
 
-    C_ATTR(login_verify, :Private)
+    C_ATTR(login_verify_POST, :Private)
     void login_verify_POST(Context *c);
 
 };

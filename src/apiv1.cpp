@@ -175,19 +175,26 @@ void ApiV1::users_login_POST(Context *c)
 				case QSqlError::NoError : //qDebug() << "no error";
 							  break;
 				case QSqlError::StatementError : qDebug() << "Statement error: " << query2.lastError().text();
+								 authenticationError(c,query2.lastError());
+								 return;
 								 break;
 				case QSqlError::TransactionError : qDebug() << "Transaction error:" << query2.lastError().text();
+								   authenticationError(c,query2.lastError());
+								   return;
 								   break;
 				case QSqlError::UnknownError : qDebug() << "Unknown Error!";
+							       authenticationError(c,query2.lastError());
+							       return;
 							       break;
 			}
+			qDebug() << "User " << query.value("UserID").toString() <<" logged in";
 			//redone to support jwt standard.
 			QJsonObject header  {
 							{QStringLiteral("typ"),QStringLiteral("JWT")},
 							{QStringLiteral("alg"),QStringLiteral("HS512")}
 					    };
 			QJsonObject payload {
-							{QStringLiteral("UserID"), query2.value("UserID").toString()},
+							{QStringLiteral("UserID"), query.value("UserID").toString()},
 							{QStringLiteral("jti"), token},
 							{QStringLiteral("exp"),expiryDate.toString(Qt::ISODate)}
 					    };
@@ -263,26 +270,39 @@ void ApiV1::login_verify_POST(Context *c)
 {
         const QJsonDocument doc = c->request()->bodyData().toJsonDocument();
 	const QJsonObject obj = doc.object();
-	QString q = "SELECT * FROM IssuedTokens WHERE UserID=:valA, Token=:valB";
+	QString q = "SELECT * FROM IssuedTokens WHERE UserId = :valA AND Token = :valB";
 	QString jwt = obj.value(QStringLiteral("JWT")).toString();
 	//format: {"JWT":"(header).(payload).(signature)"}
 	QStringList jwtl = jwt.split('.');
 	if(jwtl.size() != 3)
 	{
 		verificationFail(c);
+		qDebug() << "invalid token";
 		return;
 	}
-	QJsonDocument h = QJsonDocument::fromBinaryData(QByteArray::fromBase64(QByteArray::fromStdString(jwtl.at(0).toStdString()),QByteArray::Base64Encoding));
-	QJsonDocument p = QJsonDocument::fromBinaryData(QByteArray::fromBase64(QByteArray::fromStdString(jwtl.at(1).toStdString()),QByteArray::Base64Encoding));
+	QByteArray hba;
+	hba.append(jwtl.at(0));
+	hba = QByteArray::fromBase64(hba,QByteArray::Base64UrlEncoding);
+//	QJsonDocument h = QJsonDocument::fromBinaryData(QByteArray::fromBase64(QByteArray::fromStdString(jwtl.at(0).toStdString()),QByteArray::Base64UrlEncoding));
+	QJsonDocument h = QJsonDocument::fromJson(hba);
+	hba.clear();
+	hba.append(jwtl.at(1));
+	hba = QByteArray::fromBase64(hba,QByteArray::Base64UrlEncoding);
+	QJsonDocument p = QJsonDocument::fromJson(hba);
+//	QJsonDocument p = QJsonDocument::fromBinaryData(QByteArray::fromBase64(QByteArray::fromStdString(jwtl.at(1).toStdString()),QByteArray::Base64UrlEncoding));
 	QJsonObject header = h.object();
 	QJsonObject payload = p.object();
 	//todo:test this.
+
+	qDebug() << header.value("typ");
+	qDebug() << payload.value("exp");
+	qDebug() << payload.value("jti").toString();
 	QSqlQuery query;
 	query.prepare(q);
 	query.bindValue(":valA",payload.value("UserID").toString());
 	query.bindValue(":valB",payload.value("jti").toString());
 	query.exec();
-	if(query.size() == 1)
+	if(query.size() > 0)
 	{
 		query.next();
 		QString secret = query.value("secret").toString();
@@ -297,6 +317,15 @@ void ApiV1::login_verify_POST(Context *c)
 							});
 			return;
 		}
+		else
+		{
+			qDebug() << "hashes don't match. possible forged token";
+		}	
+	}
+	else
+	{
+		qDebug() << query.lastError().text();
+		qDebug() << "token refers to nonexistent userid:" << payload.value("UserID").toString() ;
 	}
 	qDebug() << "verification failed";
 	verificationFail(c);
