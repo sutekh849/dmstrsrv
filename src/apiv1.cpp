@@ -187,7 +187,7 @@ void ApiV1::users_login_POST(Context *c)
 							{QStringLiteral("alg"),QStringLiteral("HS512")}
 					    };
 			QJsonObject payload {
-							{QStringLiteral("UserID"), QStringLiteral("login successful")},
+							{QStringLiteral("UserID"), query2.value("UserID").toString()},
 							{QStringLiteral("jti"), token},
 							{QStringLiteral("exp"),expiryDate.toString(Qt::ISODate)}
 					    };
@@ -274,6 +274,32 @@ void ApiV1::login_verify_POST(Context *c)
 	}
 	QJsonDocument h = QJsonDocument::fromBinaryData(QByteArray::fromBase64(QByteArray::fromStdString(jwtl.at(0).toStdString()),QByteArray::Base64Encoding));
 	QJsonDocument p = QJsonDocument::fromBinaryData(QByteArray::fromBase64(QByteArray::fromStdString(jwtl.at(1).toStdString()),QByteArray::Base64Encoding));
+	QJsonObject header = h.object();
+	QJsonObject payload = p.object();
+	//todo:test this.
+	QSqlQuery query;
+	query.prepare(q);
+	query.bindValue(":valA",payload.value("UserID").toString());
+	query.bindValue(":valB",payload.value("jti").toString());
+	query.exec();
+	if(query.size() == 1)
+	{
+		query.next();
+		QString secret = query.value("secret").toString();
+		QCryptographicHash hasher(QCryptographicHash::Sha3_512);
+		hasher.addData(h.toJson().toBase64(QByteArray::Base64UrlEncoding));
+		hasher.addData(p.toJson().toBase64(QByteArray::Base64UrlEncoding));
+		hasher.addData(secret.toStdString().c_str(),secret.size());
+		if(hasher.result().toBase64(QByteArray::Base64UrlEncoding) == jwtl.at(2))
+		{//authentication successful
+			c->response()->setJsonObjectBody({
+								{QStringLiteral("Response"),QStringLiteral("0")}
+							});
+			return;
+		}
+	}
+	qDebug() << "verification failed";
+	verificationFail(c);
 	//QSqlQuery query;
 	//query.prepare(q);
 	//query.bindValue(":valA",obj.value(QStringLiteral("JWT")));
@@ -292,6 +318,6 @@ void ApiV1::login_verify_POST(Context *c)
 void ApiV1::verificationFail(Context *c)
 {
 		c->response()->setJsonObjectBody({
-							{QStringLiteral("Response"),QStringLiteral("Verification Failed")}
+							{QStringLiteral("Response"),QStringLiteral("1")}
 						});
 }

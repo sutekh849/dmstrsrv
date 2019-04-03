@@ -22,6 +22,7 @@ private:
     QSqlDatabase db;
     void authenticationError(Context *c, const QSqlError qse);
     void verificationFail(Context *c);
+    enum FailReason {PasswordWrong, UsernameWrong, ServerFailure};
 public:
     explicit ApiV1(QObject *parent = nullptr);
     ~ApiV1();
