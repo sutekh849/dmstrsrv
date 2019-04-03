@@ -3,7 +3,7 @@ this is a project to create a music streaming service ala spotify;
 This part of it is a restful server designed to allow access to a database of music.
 It makes use of a C++ framework called cutelyst2 to provide this service, and requires a mysql database for which a sql schema is provided.
 
-The only file not included in here is passwords.h, which is a single class with a single static constexpr char[] containing the password to my database.
+The only file not included in here is passwords.h, which is a single class with a single static constexpr string_view containing the password to my database.
 
 launch from build directory with cutelyst2 -r --server -p 3000 --app-file $PWD/src/libdmstrsrv.so
 test with curl for now, until it's ready for client
